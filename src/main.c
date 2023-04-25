@@ -137,8 +137,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (GLEW_OK != glewInit()) {
-        fprintf(stderr, "ERROR: Could not initialize GLEW!");
+    GLenum gl_error = 0;
+    if (GLEW_OK != (gl_error = glewInit()) && gl_error != GLEW_ERROR_NO_GLX_DISPLAY) {
+        fprintf(stderr, "ERROR: Could not initialize GLEW! %d", gl_error);
         return 1;
     }
 

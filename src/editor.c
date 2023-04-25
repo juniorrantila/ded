@@ -410,26 +410,7 @@ void editor_render(SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer 
         for (size_t i = 0; i < editor->tokens.count; ++i) {
             Token token = editor->tokens.items[i];
             Vec2f pos = token.position;
-            Vec4f color = vec4fs(1);
-            switch (token.kind) {
-            case TOKEN_PREPROC:
-                color = hex_to_vec4f(0x95A99FFF);
-                break;
-            case TOKEN_KEYWORD:
-                color = hex_to_vec4f(0xFFDD33FF);
-                break;
-            case TOKEN_CONTROL_FLOW:
-                color = hex_to_vec4f(0xFF8C33FF);
-                break;
-            case TOKEN_COMMENT:
-                color = hex_to_vec4f(0xCC8C3CFF);
-                break;
-            case TOKEN_STRING:
-                color = hex_to_vec4f(0x73c936ff);
-                break;
-            default:
-            {}
-            }
+            Vec4f color = token_kind_color(token.kind);
             free_glyph_atlas_render_line_sized(atlas, sr, token.text, token.text_len, &pos, color);
             // TODO: the max_line_len should be calculated based on what's visible on the screen right now
             if (max_line_len < pos.x) max_line_len = pos.x;

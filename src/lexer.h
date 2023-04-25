@@ -22,6 +22,7 @@ typedef enum {
 } Token_Kind;
 
 const char *token_kind_name(Token_Kind kind);
+Vec4f token_kind_color(Token_Kind kind);
 
 typedef struct {
     Token_Kind kind;

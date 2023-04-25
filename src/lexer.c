@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "common.h"
+#include "la.h"
 #include "lexer.h"
 
 typedef struct {
@@ -70,7 +71,26 @@ const char *token_kind_name(Token_Kind kind)
     case TOKEN_STRING:
         return "string";
     }
-    return NULL;
+}
+
+Vec4f token_kind_color(Token_Kind kind)
+{
+    switch (kind) {
+    case TOKEN_END:
+    case TOKEN_INVALID:
+    case TOKEN_SYMBOL:
+    case TOKEN_OPEN_PAREN:
+    case TOKEN_CLOSE_PAREN:
+    case TOKEN_OPEN_CURLY:
+    case TOKEN_CLOSE_CURLY:
+    case TOKEN_SEMICOLON:
+        return vec4fs(1);
+    case TOKEN_PREPROC: return hex_to_vec4f(0x95A99FFF);
+    case TOKEN_KEYWORD: return hex_to_vec4f(0xFFDD33FF);
+    case TOKEN_CONTROL_FLOW: return hex_to_vec4f(0xFF8C33FF);
+    case TOKEN_COMMENT: return hex_to_vec4f(0xCC8C3CFF);
+    case TOKEN_STRING: return hex_to_vec4f(0x73c936ff);
+    }
 }
 
 Lexer lexer_new(Free_Glyph_Atlas *atlas, const char *content, size_t content_len)

@@ -95,6 +95,38 @@ size_t editor_cursor_row(const Editor *e)
     return e->lines.count - 1;
 }
 
+void editor_move_page_up(Editor *e)
+{
+    editor_stop_search(e);
+
+    for (size_t i = 0; i < 10; i++) {
+        size_t cursor_row = editor_cursor_row(e);
+        size_t cursor_col = e->cursor - e->lines.items[cursor_row].begin;
+        if (cursor_row > 0) {
+            Line next_line = e->lines.items[cursor_row - 1];
+            size_t next_line_size = next_line.end - next_line.begin;
+            if (cursor_col > next_line_size) cursor_col = next_line_size;
+            e->cursor = next_line.begin + cursor_col;
+        }
+    }
+}
+
+void editor_move_page_down(Editor *e)
+{
+    editor_stop_search(e);
+
+    for (size_t i = 0; i < 10; i++) {
+        size_t cursor_row = editor_cursor_row(e);
+        size_t cursor_col = e->cursor - e->lines.items[cursor_row].begin;
+        if (cursor_row < e->lines.count - 1) {
+            Line next_line = e->lines.items[cursor_row + 1];
+            size_t next_line_size = next_line.end - next_line.begin;
+            if (cursor_col > next_line_size) cursor_col = next_line_size;
+            e->cursor = next_line.begin + cursor_col;
+        }
+    }
+}
+
 void editor_move_line_up(Editor *e)
 {
     editor_stop_search(e);

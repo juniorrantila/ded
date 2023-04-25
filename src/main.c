@@ -369,6 +369,18 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_PAGEUP: {
+                        editor_move_page_up(&editor);
+                        editor.last_stroke = SDL_GetTicks();
+                    }
+                    break;
+
+                    case SDLK_PAGEDOWN: {
+                        editor_move_page_down(&editor);
+                        editor.last_stroke = SDL_GetTicks();
+                    }
+                    break;
+
                     case SDLK_LEFT: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                         if (event.key.keysym.mod & KMOD_CTRL) {

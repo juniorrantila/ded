@@ -60,6 +60,8 @@ void editor_move_char_left(Editor *e);
 void editor_move_char_right(Editor *e);
 void editor_move_word_left(Editor *e);
 void editor_move_word_right(Editor *e);
+void editor_move_page_up(Editor *e);
+void editor_move_page_down(Editor *e);
 
 void editor_move_to_begin(Editor *e);
 void editor_move_to_end(Editor *e);

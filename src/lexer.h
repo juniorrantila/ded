@@ -16,6 +16,7 @@ typedef enum {
     TOKEN_CLOSE_CURLY,
     TOKEN_SEMICOLON,
     TOKEN_KEYWORD,
+    TOKEN_CONTROL_FLOW,
     TOKEN_COMMENT,
     TOKEN_STRING,
 } Token_Kind;

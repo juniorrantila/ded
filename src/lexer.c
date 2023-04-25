@@ -20,21 +20,25 @@ Literal_Token literal_tokens[] = {
 #define literal_tokens_count (sizeof(literal_tokens)/sizeof(literal_tokens[0]))
 
 const char *keywords[] = {
-    "auto", "break", "case", "char", "const", "continue", "default", "do", "double",
-    "else", "enum", "extern", "float", "for", "goto", "if", "int", "long", "register",
-    "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef",
-    "union", "unsigned", "void", "volatile", "while", "alignas", "alignof", "and",
-    "and_eq", "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept", "bitand",
-    "bitor", "bool", "catch", "char16_t", "char32_t", "char8_t", "class", "co_await",
-    "co_return", "co_yield", "compl", "concept", "const_cast", "consteval", "constexpr",
-    "constinit", "decltype", "delete", "dynamic_cast", "explicit", "export", "false",
-    "friend", "inline", "mutable", "namespace", "new", "noexcept", "not", "not_eq",
-    "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "reflexpr",
-    "reinterpret_cast", "requires", "static_assert", "static_cast", "synchronized",
-    "template", "this", "thread_local", "throw", "true", "try", "typeid", "typename",
-    "using", "virtual", "wchar_t", "xor", "xor_eq",
+    "auto", "char", "const", "double", "enum", "extern", "float", "int", "long",
+    "register", "short", "signed", "sizeof", "static", "struct", "typedef", "union",
+    "unsigned", "void", "volatile", "while", "alignas", "alignof", "and", "and_eq",
+    "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept", "bitand", "bitor",
+    "bool", "char16_t", "char32_t", "char8_t", "class", "compl", "concept", "const_cast",
+    "consteval", "constexpr", "constinit", "decltype", "delete", "dynamic_cast", "explicit",
+    "export", "false", "friend", "inline", "mutable", "namespace", "new", "noexcept", "not",
+    "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public",
+    "reflexpr", "reinterpret_cast", "requires", "static_assert", "static_cast", "synchronized",
+    "template", "this", "thread_local", "true", "typeid", "typename", "using", "virtual",
+    "wchar_t", "xor", "xor_eq",
 };
 #define keywords_count (sizeof(keywords)/sizeof(keywords[0]))
+
+const char *control_flow[] = {
+    "break", "case", "continue", "default", "do", "else", "for", "goto", "if", "return",
+    "switch", "while", "catch", "co_await", "co_return", "co_yield", "try"
+};
+#define control_flow_count (sizeof(control_flow)/sizeof(control_flow[0]))
 
 const char *token_kind_name(Token_Kind kind)
 {
@@ -59,8 +63,12 @@ const char *token_kind_name(Token_Kind kind)
         return "semicolon";
     case TOKEN_KEYWORD:
         return "keyword";
-    default:
-        UNREACHABLE("token_kind_name");
+    case TOKEN_CONTROL_FLOW:
+        return "control flow";
+    case TOKEN_COMMENT:
+        return "comment";
+    case TOKEN_STRING:
+        return "string";
     }
     return NULL;
 }
@@ -207,6 +215,14 @@ Token lexer_next(Lexer *l)
             size_t keyword_len = strlen(keywords[i]);
             if (keyword_len == token.text_len && memcmp(keywords[i], token.text, keyword_len) == 0) {
                 token.kind = TOKEN_KEYWORD;
+                break;
+            }
+        }
+
+        for (size_t i = 0; i < control_flow_count; ++i) {
+            size_t control_flow_len = strlen(control_flow[i]);
+            if (control_flow_len == token.text_len && memcmp(control_flow[i], token.text, control_flow_len) == 0) {
+                token.kind = TOKEN_CONTROL_FLOW;
                 break;
             }
         }

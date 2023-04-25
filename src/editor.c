@@ -346,6 +346,9 @@ void editor_render(SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer 
             case TOKEN_KEYWORD:
                 color = hex_to_vec4f(0xFFDD33FF);
                 break;
+            case TOKEN_CONTROL_FLOW:
+                color = hex_to_vec4f(0xFF8C33FF);
+                break;
             case TOKEN_COMMENT:
                 color = hex_to_vec4f(0xCC8C3CFF);
                 break;

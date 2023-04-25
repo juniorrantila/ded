@@ -87,8 +87,8 @@ Vec4f token_kind_color(Token_Kind kind)
         return vec4fs(1);
     case TOKEN_PREPROC: return hex_to_vec4f(0x95A99FFF);
     case TOKEN_KEYWORD: return hex_to_vec4f(0xFFDD33FF);
-    case TOKEN_CONTROL_FLOW: return hex_to_vec4f(0xFF8C33FF);
-    case TOKEN_COMMENT: return hex_to_vec4f(0xCC8C3CFF);
+    case TOKEN_CONTROL_FLOW: return hex_to_vec4f(0xCC8C3CFF);
+    case TOKEN_COMMENT: return hex_to_vec4f(0x95A99FFF);
     case TOKEN_STRING: return hex_to_vec4f(0x73c936ff);
     }
 }

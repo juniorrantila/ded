@@ -40,7 +40,7 @@ void editor_backspace_word(Editor *e)
     }
 }
 
-void backspace_selection(Editor *e)
+void editor_backspace_selection(Editor *e)
 {
     size_t begin = e->select_begin;
     size_t end = e->cursor;
@@ -59,7 +59,7 @@ void backspace_selection(Editor *e)
 void editor_backspace(Editor *e, bool control)
 {
     if (e->selection) {
-        backspace_selection(e);
+        editor_backspace_selection(e);
         editor_retokenize(e);
         return;
     }

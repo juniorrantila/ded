@@ -6,6 +6,8 @@
 #include "./editor.h"
 #include "./common.h"
 
+void editor_delete_once(Editor *e);
+
 void editor_backspace_once(Editor *e)
 {
     if (e->searching) {
@@ -38,13 +40,36 @@ void editor_backspace_word(Editor *e)
     }
 }
 
+void backspace_selection(Editor *e)
+{
+    size_t begin = e->select_begin;
+    size_t end = e->cursor;
+    if (begin < end) {
+        for (size_t i = begin; i < end; i++) {
+            editor_backspace_once(e);
+        }
+    } else {
+        for (size_t i = end; i < begin; i++) {
+            editor_delete_once(e);
+        }
+    }
+    e->selection = false;
+}
+
 void editor_backspace(Editor *e, bool control)
 {
+    if (e->selection) {
+        backspace_selection(e);
+        editor_retokenize(e);
+        return;
+    }
+
     if (control) {
         editor_backspace_word(e);
         editor_retokenize(e);
         return;
     }
+
     editor_backspace_once(e);
     editor_retokenize(e);
 }

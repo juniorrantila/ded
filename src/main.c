@@ -297,6 +297,11 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_s: {
+                        if (!(event.key.keysym.mod & KMOD_CTRL)) {
+                            break;
+                        }
+                    }
                     case SDLK_F2: {
                         if (editor.file_path.count > 0) {
                             err = editor_save(&editor);

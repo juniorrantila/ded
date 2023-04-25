@@ -158,6 +158,7 @@ int main(int argc, char **argv)
     editor.atlas = &atlas;
     editor_retokenize(&editor);
 
+    bool did_movement = true;
     bool quit = false;
     bool file_browser = false;
     while (!quit) {
@@ -178,11 +179,23 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_k: {
+                        if (!(event.key.keysym.mod & KMOD_ALT)) {
+                            did_movement = false;
+                            break;
+                        }
+                    }
                     case SDLK_UP: {
                         if (fb.cursor > 0) fb.cursor -= 1;
                     }
                     break;
 
+                    case SDLK_j: {
+                        if (!(event.key.keysym.mod & KMOD_ALT)) {
+                            did_movement = false;
+                            break;
+                        }
+                    }
                     case SDLK_DOWN: {
                         if (fb.cursor + 1 < fb.files.count) fb.cursor += 1;
                     }
@@ -347,6 +360,12 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_k: {
+                        if (!(event.key.keysym.mod & KMOD_ALT)) {
+                            did_movement = false;
+                            break;
+                        }
+                    }
                     case SDLK_UP: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                         if (event.key.keysym.mod & KMOD_CTRL) {
@@ -358,6 +377,12 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_j: {
+                        if (!(event.key.keysym.mod & KMOD_ALT)) {
+                            did_movement = false;
+                            break;
+                        }
+                    }
                     case SDLK_DOWN: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                         if (event.key.keysym.mod & KMOD_CTRL) {
@@ -381,6 +406,12 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_h: {
+                        if (!(event.key.keysym.mod & KMOD_ALT)) {
+                            did_movement = false;
+                            break;
+                        }
+                    }
                     case SDLK_LEFT: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                         if (event.key.keysym.mod & KMOD_CTRL) {
@@ -392,6 +423,12 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_l: {
+                        if (!(event.key.keysym.mod & KMOD_ALT)) {
+                            did_movement = false;
+                            break;
+                        }
+                    }
                     case SDLK_RIGHT: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                         if (event.key.keysym.mod & KMOD_CTRL) {
@@ -412,12 +449,15 @@ int main(int argc, char **argv)
                     // Nothing for now
                     // Once we have incremental search in the file browser this may become useful
                 } else {
-                    const char *text = event.text.text;
-                    size_t text_len = strlen(text);
-                    for (size_t i = 0; i < text_len; ++i) {
-                        editor_insert_char(&editor, text[i]);
+                    // TODO: Reorder events so that key down events always come before
+                    if (!did_movement) {
+                        const char *text = event.text.text;
+                        size_t text_len = strlen(text);
+                        for (size_t i = 0; i < text_len; ++i) {
+                            editor_insert_char(&editor, text[i]);
+                        }
+                        editor.last_stroke = SDL_GetTicks();
                     }
-                    editor.last_stroke = SDL_GetTicks();
                 }
             }
             break;

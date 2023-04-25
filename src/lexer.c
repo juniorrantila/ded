@@ -227,6 +227,20 @@ Token lexer_next(Lexer *l)
             }
         }
 
+        bool all_caps = true;
+        for (size_t i = 0; i < token.text_len; i++) {
+            switch (token.text[i]) {
+                case 'A'...'Z':
+                case '0'...'9':
+                case '_':
+                    break;
+                default: all_caps = false;
+            }
+        }
+        if (all_caps && token.text_len > 1) {
+            token.kind = TOKEN_PREPROC;
+        }
+
         return token;
     }
 

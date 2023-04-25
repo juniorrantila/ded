@@ -158,6 +158,7 @@ int main(int argc, char **argv)
     editor.atlas = &atlas;
     editor_retokenize(&editor);
 
+    bool is_fullscreen = false;
     bool did_movement = true;
     bool quit = false;
     bool file_browser = false;
@@ -172,6 +173,14 @@ int main(int argc, char **argv)
             break;
 
             case SDL_KEYDOWN: {
+                switch (event.key.keysym.sym) {
+                    case SDLK_F11: {
+                        is_fullscreen = !is_fullscreen;
+                        SDL_SetWindowFullscreen(window, is_fullscreen * SDL_WINDOW_FULLSCREEN_DESKTOP);
+                    }
+                    break;
+                }
+
                 if (file_browser) {
                     switch (event.key.keysym.sym) {
                     case SDLK_F3: {

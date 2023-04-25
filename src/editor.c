@@ -506,6 +506,13 @@ void editor_update_selection(Editor *e, bool shift)
     }
 }
 
+void editor_clipboard_cut(Editor *e)
+{
+    editor_clipboard_copy(e);
+    editor_backspace_selection(e);
+    editor_retokenize(e);
+}
+
 void editor_clipboard_copy(Editor *e)
 {
     if (e->searching) return;

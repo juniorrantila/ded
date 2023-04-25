@@ -377,6 +377,13 @@ int main(int argc, char **argv)
                     }
                     break;
 
+                    case SDLK_x: {
+                        if (event.key.keysym.mod & KMOD_CTRL) {
+                            editor_clipboard_cut(&editor);
+                        }
+                    }
+                    break;
+
                     case SDLK_c: {
                         if (event.key.keysym.mod & KMOD_CTRL) {
                             editor_clipboard_copy(&editor);

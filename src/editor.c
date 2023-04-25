@@ -6,7 +6,7 @@
 #include "./editor.h"
 #include "./common.h"
 
-void editor_backspace(Editor *e)
+void editor_backspace_once(Editor *e)
 {
     if (e->searching) {
         if (e->search.count > 0) {
@@ -25,11 +25,31 @@ void editor_backspace(Editor *e)
         );
         e->cursor -= 1;
         e->data.count -= 1;
-        editor_retokenize(e);
     }
 }
 
-void editor_delete(Editor *e)
+void editor_backspace_word(Editor *e)
+{
+    while (e->cursor > 0 && !isalnum(e->data.items[e->cursor - 1])) {
+        editor_backspace_once(e);
+    }
+    while (e->cursor > 0 && isalnum(e->data.items[e->cursor - 1])) {
+        editor_backspace_once(e);
+    }
+}
+
+void editor_backspace(Editor *e, bool control)
+{
+    if (control) {
+        editor_backspace_word(e);
+        editor_retokenize(e);
+        return;
+    }
+    editor_backspace_once(e);
+    editor_retokenize(e);
+}
+
+void editor_delete_once(Editor *e)
 {
     if (e->searching) return;
 
@@ -40,6 +60,26 @@ void editor_delete(Editor *e)
         e->data.count - e->cursor - 1
     );
     e->data.count -= 1;
+}
+
+void editor_delete_word(Editor *e)
+{
+    while (e->cursor < e->data.count && !isalnum(e->data.items[e->cursor])) {
+        editor_delete_once(e);
+    }
+    while (e->cursor < e->data.count && isalnum(e->data.items[e->cursor])) {
+        editor_delete_once(e);
+    }
+}
+
+void editor_delete(Editor *e, bool control)
+{
+    if (control) {
+        editor_delete_word(e);
+        editor_retokenize(e);
+        return;
+    }
+    editor_delete_once(e);
     editor_retokenize(e);
 }
 

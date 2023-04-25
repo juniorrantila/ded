@@ -292,7 +292,7 @@ int main(int argc, char **argv)
                     } break;
 
                     case SDLK_BACKSPACE: {
-                        editor_backspace(&editor);
+                        editor_backspace(&editor, event.key.keysym.mod & KMOD_CTRL);
                         editor.last_stroke = SDL_GetTicks();
                     }
                     break;
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_DELETE: {
-                        editor_delete(&editor);
+                        editor_delete(&editor, event.key.keysym.mod & KMOD_CTRL);
                         editor.last_stroke = SDL_GetTicks();
                     }
                     break;

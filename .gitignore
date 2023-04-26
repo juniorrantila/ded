@@ -5,3 +5,5 @@ SDL2
 *.obj
 *.pdb
 *.ilk
+/subprojects/*
+!/subprojects/*.wrap

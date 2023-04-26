@@ -3,7 +3,6 @@
 
 #include <assert.h>
 
-#define GLEW_STATIC
 #include <GL/glew.h>
 
 #define GL_GLEXT_PROTOTYPES

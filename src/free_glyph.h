@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include "./la.h"
 
-#define GLEW_STATIC
 #include <GL/glew.h>
 
 #define GL_GLEXT_PROTOTYPES

@@ -5,6 +5,7 @@
 #include <string.h>
 #include "./editor.h"
 #include "./common.h"
+#include "la.h"
 
 void editor_delete_once(Editor *e);
 
@@ -407,13 +408,26 @@ void editor_render(SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer 
         size_t cursor_row = editor_cursor_row(editor);
         Line line = editor->lines.items[cursor_row];
         size_t cursor_col = editor->cursor - line.begin;
-        cursor_pos.y = -((float)cursor_row + CURSOR_OFFSET) * FREE_GLYPH_FONT_SIZE;
-        cursor_pos.x = free_glyph_atlas_cursor_pos(
+        Vec2f target = vec2f(cursor_col, cursor_row);
+
+        sr->cursor_vel = vec2f_mul(
+                             vec2f_sub(target, sr->cursor_pos),
+                             vec2f(16.0f, 8.0f));
+
+        sr->cursor_pos =
+            vec2f_add(sr->cursor_pos, vec2f_mul(sr->cursor_vel, vec2fs(DELTA_TIME)));
+
+        cursor_pos.y = -((float)sr->cursor_pos.y + CURSOR_OFFSET) * FREE_GLYPH_FONT_SIZE;
+        cursor_pos.x = sr->cursor_absolute_pos_x; // ((float)sr->cursor_pos.x + CURSOR_OFFSET) * (FREE_GLYPH_FONT_SIZE / 2.0 + 3.0);
+
+        float target_x = free_glyph_atlas_cursor_pos(
                            atlas,
                            editor->data.items + line.begin, line.end - line.begin,
-                           vec2f(0.0, cursor_pos.y),
-                           cursor_col
+                           vec2f(0.0, sr->cursor_pos.y),
+                           cursor_col 
                        );
+        float x_vel = (target_x - sr->cursor_absolute_pos_x) * 12.0f;
+        sr->cursor_absolute_pos_x = + sr->cursor_absolute_pos_x + x_vel * DELTA_TIME;
     }
 
     // Render search

@@ -119,3 +119,11 @@ float lerpf(float a, float b, float t)
 {
     return a + (b - a) * t;
 }
+
+Vec2f vec2f_lerp(Vec2f a, Vec2f b, Vec2f t)
+{
+    return vec2f(
+        lerpf(a.x, b.x, t.x),
+        lerpf(a.y, b.y, t.y)
+    );
+}

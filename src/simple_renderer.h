@@ -59,6 +59,11 @@ typedef struct {
     float camera_scale;
     float camera_scale_vel;
     Vec2f camera_vel;
+
+    Vec2f cursor_pos;
+    float cursor_absolute_pos_x;
+    float cursor_scale_vel;
+    Vec2f cursor_vel;
 } Simple_Renderer;
 
 void simple_renderer_init(Simple_Renderer *sr);

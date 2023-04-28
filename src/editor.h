@@ -26,6 +26,11 @@ typedef struct {
     size_t capacity;
 } Tokens;
 
+typedef enum {
+    EDITOR_MODE_NORMAL,
+    EDITOR_MODE_INSERT,
+} Editor_Mode;
+
 typedef struct {
     Free_Glyph_Atlas *atlas;
 
@@ -44,6 +49,8 @@ typedef struct {
     Uint32 last_stroke;
 
     String_Builder clipboard;
+
+    Editor_Mode mode;
 } Editor;
 
 Errno editor_save_as(Editor *editor, const char *file_path);

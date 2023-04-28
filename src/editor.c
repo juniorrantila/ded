@@ -460,13 +460,22 @@ void editor_render(SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer 
     // Render cursor
     simple_renderer_set_shader(sr, SHADER_FOR_COLOR);
     {
-        float CURSOR_WIDTH = 5.0f;
-        Uint32 CURSOR_BLINK_THRESHOLD = 500;
-        Uint32 CURSOR_BLINK_PERIOD = 1000;
-        Uint32 t = SDL_GetTicks() - editor->last_stroke;
+        if (editor->mode == EDITOR_MODE_NORMAL) {
+            float CURSOR_WIDTH = FREE_GLYPH_FONT_SIZE / 2.0; // 5.0f;
+            Uint32 CURSOR_BLINK_THRESHOLD = 500;
+            Uint32 CURSOR_BLINK_PERIOD = 1000;
+            Uint32 t = SDL_GetTicks() - editor->last_stroke;
 
-        sr->verticies_count = 0;
-        if (t < CURSOR_BLINK_THRESHOLD || t/CURSOR_BLINK_PERIOD%2 != 0) {
+            sr->verticies_count = 0;
+            if (t < CURSOR_BLINK_THRESHOLD || t/CURSOR_BLINK_PERIOD%2 != 0) {
+                simple_renderer_solid_rect(
+                    sr,
+                    cursor_pos, vec2f(CURSOR_WIDTH, FREE_GLYPH_FONT_SIZE),
+                    vec4f(1.0, 1.0, 1.0, 0.5));
+            }
+        } else {
+            float CURSOR_WIDTH = 5.0f;
+            sr->verticies_count = 0;
             simple_renderer_solid_rect(
                 sr,
                 cursor_pos, vec2f(CURSOR_WIDTH, FREE_GLYPH_FONT_SIZE),

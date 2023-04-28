@@ -159,7 +159,6 @@ int main(int argc, char **argv)
     editor_retokenize(&editor);
 
     bool is_fullscreen = false;
-    bool did_movement = true;
     bool quit = false;
     bool file_browser = false;
     while (!quit) {
@@ -205,10 +204,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_k: {
-                        if (!(event.key.keysym.mod & KMOD_ALT)) {
-                            did_movement = false;
+                        if (editor.mode != EDITOR_MODE_NORMAL)
                             break;
-                        }
                     }
                     case SDLK_UP: {
                         if (fb.cursor > 0) fb.cursor -= 1;
@@ -216,10 +213,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_j: {
-                        if (!(event.key.keysym.mod & KMOD_ALT)) {
-                            did_movement = false;
+                        if (editor.mode != EDITOR_MODE_NORMAL)
                             break;
-                        }
                     }
                     case SDLK_DOWN: {
                         if (fb.cursor + 1 < fb.files.count) fb.cursor += 1;
@@ -270,6 +265,10 @@ int main(int argc, char **argv)
                     }
                 } else {
                     switch (event.key.keysym.sym) {
+                    case SDLK_0: {
+                        if (editor.mode != EDITOR_MODE_NORMAL)
+                            break;
+                    }
                     case SDLK_HOME: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                         if (event.key.keysym.mod & KMOD_CTRL) {
@@ -280,6 +279,10 @@ int main(int argc, char **argv)
                         editor.last_stroke = SDL_GetTicks();
                     } break;
 
+                    case SDLK_DOLLAR: {
+                        if (editor.mode != EDITOR_MODE_NORMAL)
+                            break;
+                    }
                     case SDLK_END: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                         if (event.key.keysym.mod & KMOD_CTRL) {
@@ -296,10 +299,26 @@ int main(int argc, char **argv)
                     }
                     break;
 
-                    case SDLK_s: {
-                        if (!(event.key.keysym.mod & KMOD_CTRL)) {
-                            break;
+                    case SDLK_ESCAPE: {
+                        if (!editor.selection && !editor.searching) {
+                            editor.mode = EDITOR_MODE_NORMAL;
                         }
+                        editor_stop_search(&editor);
+                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
+                    break;
+
+                    } break;
+
+                    case SDLK_i: {
+                        if (editor.mode != EDITOR_MODE_INSERT) {
+                            editor.mode = EDITOR_MODE_INSERT;
+                            while(SDL_PollEvent(&event));
+                        }
+                    } break;
+
+                    case SDLK_s: {
+                        if (editor.mode != EDITOR_MODE_NORMAL)
+                            break;
                     }
                     case SDLK_F2: {
                         if (editor.file_path.count > 0) {
@@ -316,6 +335,7 @@ int main(int argc, char **argv)
 
                     case SDLK_F3: {
                         file_browser = true;
+                        editor.mode = EDITOR_MODE_NORMAL;
                     }
                     break;
 
@@ -325,6 +345,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_RETURN: {
+                        if (editor.mode == EDITOR_MODE_NORMAL)
+                            break;
                         if (editor.searching) {
                             editor_stop_search(&editor);
                         } else {
@@ -335,6 +357,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_DELETE: {
+                        if (editor.mode == EDITOR_MODE_NORMAL)
+                            break;
                         editor_delete(&editor, event.key.keysym.mod & KMOD_CTRL);
                         editor.last_stroke = SDL_GetTicks();
                     }
@@ -344,12 +368,6 @@ int main(int argc, char **argv)
                         if (event.key.keysym.mod & KMOD_CTRL) {
                             editor_start_search(&editor);
                         }
-                    }
-                    break;
-
-                    case SDLK_ESCAPE: {
-                        editor_stop_search(&editor);
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
                     }
                     break;
 
@@ -398,10 +416,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_k: {
-                        if (!(event.key.keysym.mod & KMOD_ALT)) {
-                            did_movement = false;
+                        if (editor.mode != EDITOR_MODE_NORMAL)
                             break;
-                        }
                     }
                     case SDLK_UP: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
@@ -415,10 +431,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_j: {
-                        if (!(event.key.keysym.mod & KMOD_ALT)) {
-                            did_movement = false;
+                        if (editor.mode != EDITOR_MODE_NORMAL)
                             break;
-                        }
                     }
                     case SDLK_DOWN: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
@@ -444,10 +458,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_h: {
-                        if (!(event.key.keysym.mod & KMOD_ALT)) {
-                            did_movement = false;
+                        if (editor.mode != EDITOR_MODE_NORMAL)
                             break;
-                        }
                     }
                     case SDLK_LEFT: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
@@ -461,10 +473,8 @@ int main(int argc, char **argv)
                     break;
 
                     case SDLK_l: {
-                        if (!(event.key.keysym.mod & KMOD_ALT)) {
-                            did_movement = false;
+                        if (editor.mode != EDITOR_MODE_NORMAL)
                             break;
-                        }
                     }
                     case SDLK_RIGHT: {
                         editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
@@ -487,7 +497,7 @@ int main(int argc, char **argv)
                     // Once we have incremental search in the file browser this may become useful
                 } else {
                     // TODO: Reorder events so that key down events always come before
-                    if (!did_movement) {
+                    if (editor.mode == EDITOR_MODE_INSERT) {
                         const char *text = event.text.text;
                         size_t text_len = strlen(text);
                         for (size_t i = 0; i < text_len; ++i) {

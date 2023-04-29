@@ -1,6 +1,7 @@
 #ifndef EDITOR_H_
 #define EDITOR_H_
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include "common.h"
 #include "free_glyph.h"
@@ -29,6 +30,9 @@ typedef struct {
 typedef enum {
     EDITOR_MODE_NORMAL,
     EDITOR_MODE_INSERT,
+    EDITOR_MODE_BROWSE,
+
+    __EDITOR_MODE_SIZE,
 } Editor_Mode;
 
 typedef struct {

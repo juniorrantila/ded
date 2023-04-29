@@ -7,3 +7,4 @@ SDL2
 *.ilk
 /subprojects/*
 !/subprojects/*.wrap
+.cache

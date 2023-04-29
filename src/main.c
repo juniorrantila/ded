@@ -54,6 +54,12 @@ static File_Browser fb = {0};
 // TODO: display errors reported via flash_error right in the text editor window somehow
 #define flash_error(...) do { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
 
+typedef struct {
+    bool quit;
+    bool is_fullscreen;
+    SDL_Window* window;
+} Handle_Events;
+static void handle_events(Handle_Events*, Editor*, Simple_Renderer*);
 
 int main(int argc, char **argv)
 {
@@ -68,8 +74,8 @@ int main(int argc, char **argv)
     }
 
     // TODO: users should be able to customize the font
-    // const char *const font_file_path = "./fonts/VictorMono-Regular.ttf";
-    const char *const font_file_path = "./fonts/iosevka-regular.ttf";
+    const char *const font_file_path = "./fonts/VictorMono-Regular.ttf";
+    // const char *const font_file_path = "./fonts/iosevka-regular.ttf";
 
     FT_Face face;
     error = FT_New_Face(library, font_file_path, 0, &face);
@@ -158,364 +164,20 @@ int main(int argc, char **argv)
     editor.atlas = &atlas;
     editor_retokenize(&editor);
 
-    bool is_fullscreen = false;
-    bool quit = false;
-    bool file_browser = false;
-    while (!quit) {
+    Handle_Events context = (Handle_Events){
+        .is_fullscreen = false,
+        .quit = false,
+        .window = window,
+    };
+    while (!context.quit) {
         const Uint32 start = SDL_GetTicks();
-        SDL_Event event = {0};
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT: {
-                quit = true;
-            }
-            break;
-
-            case SDL_WINDOWEVENT: {
-                switch (event.window.event) {
-                case SDL_WINDOWEVENT_RESTORED:
-                case SDL_WINDOWEVENT_MAXIMIZED:
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
-                case SDL_WINDOWEVENT_RESIZED:
-                {
-                    int w = event.window.data1;
-                    int h = event.window.data2;
-                    glViewport(0, 0, w, h);
-                }
-                break;
-                }
-            }
-            break;
-
-            case SDL_KEYDOWN: {
-                switch (event.key.keysym.sym) {
-                    case SDLK_F11: {
-                        is_fullscreen = !is_fullscreen;
-                        SDL_SetWindowFullscreen(window, is_fullscreen * SDL_WINDOW_FULLSCREEN_DESKTOP);
-                    }
-                    break;
-                }
-
-                if (file_browser) {
-                    switch (event.key.keysym.sym) {
-                    case SDLK_F3: {
-                        file_browser = false;
-                    }
-                    break;
-
-                    case SDLK_k: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_UP: {
-                        if (fb.cursor > 0) fb.cursor -= 1;
-                    }
-                    break;
-
-                    case SDLK_j: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_DOWN: {
-                        if (fb.cursor + 1 < fb.files.count) fb.cursor += 1;
-                    }
-                    break;
-
-                    case SDLK_RETURN: {
-                        const char *file_path = fb_file_path(&fb);
-                        if (file_path) {
-                            File_Type ft;
-                            err = type_of_file(file_path, &ft);
-                            if (err != 0) {
-                                flash_error("Could not determine type of file %s: %s", file_path, strerror(err));
-                            } else {
-                                switch (ft) {
-                                case FT_DIRECTORY: {
-                                    err = fb_change_dir(&fb);
-                                    if (err != 0) {
-                                        flash_error("Could not change directory to %s: %s", file_path, strerror(err));
-                                    }
-                                }
-                                break;
-
-                                case FT_REGULAR: {
-                                    // TODO: before opening a new file make sure you don't have unsaved changes
-                                    // And if you do, annoy the user about it. (just like all the other editors do)
-                                    err = editor_load_from_file(&editor, file_path);
-                                    if (err != 0) {
-                                        flash_error("Could not open file %s: %s", file_path, strerror(err));
-                                    } else {
-                                        file_browser = false;
-                                    }
-                                }
-                                break;
-
-                                case FT_OTHER: {
-                                    flash_error("%s is neither a regular file nor a directory. We can't open it.", file_path);
-                                }
-                                break;
-
-                                default:
-                                    UNREACHABLE("unknown File_Type");
-                                }
-                            }
-                        }
-                    }
-                    break;
-                    }
-                } else {
-                    switch (event.key.keysym.sym) {
-                    case SDLK_0: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_HOME: {
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_move_to_begin(&editor);
-                        } else {
-                            editor_move_to_line_begin(&editor);
-                        }
-                        editor.last_stroke = SDL_GetTicks();
-                    } break;
-
-                    case SDLK_DOLLAR: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_END: {
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_move_to_end(&editor);
-                        } else {
-                            editor_move_to_line_end(&editor);
-                        }
-                        editor.last_stroke = SDL_GetTicks();
-                    } break;
-
-                    case SDLK_BACKSPACE: {
-                        editor_backspace(&editor, event.key.keysym.mod & KMOD_CTRL);
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-
-                    case SDLK_ESCAPE: {
-                        if (!editor.selection && !editor.searching) {
-                            editor.mode = EDITOR_MODE_NORMAL;
-                        }
-                        editor_stop_search(&editor);
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
-                    break;
-
-                    } break;
-
-                    case SDLK_i: {
-                        if (editor.mode != EDITOR_MODE_INSERT) {
-                            editor.mode = EDITOR_MODE_INSERT;
-                            while(SDL_PollEvent(&event));
-                        }
-                    } break;
-
-                    case SDLK_s: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_F2: {
-                        if (editor.file_path.count > 0) {
-                            err = editor_save(&editor);
-                            if (err != 0) {
-                                flash_error("Could not save currently edited file: %s", strerror(err));
-                            }
-                        } else {
-                            // TODO: ask the user for the path to save to in this situation
-                            flash_error("Nowhere to save the text");
-                        }
-                    }
-                    break;
-
-                    case SDLK_F3: {
-                        file_browser = true;
-                        editor.mode = EDITOR_MODE_NORMAL;
-                    }
-                    break;
-
-                    case SDLK_F5: {
-                        simple_renderer_reload_shaders(&sr);
-                    }
-                    break;
-
-                    case SDLK_RETURN: {
-                        if (editor.mode == EDITOR_MODE_NORMAL)
-                            break;
-                        if (editor.searching) {
-                            editor_stop_search(&editor);
-                        } else {
-                            editor_insert_char(&editor, '\n');
-                            editor.last_stroke = SDL_GetTicks();
-                        }
-                    }
-                    break;
-
-                    case SDLK_DELETE: {
-                        if (editor.mode == EDITOR_MODE_NORMAL)
-                            break;
-                        editor_delete(&editor, event.key.keysym.mod & KMOD_CTRL);
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-
-                    case SDLK_f: {
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_start_search(&editor);
-                        }
-                    }
-                    break;
-
-                    case SDLK_a: {
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor.selection = true;
-                            editor.select_begin = 0;
-                            editor.cursor = editor.data.count;
-                        }
-                    }
-                    break;
-
-                    case SDLK_TAB: {
-                        // TODO: indent on Tab instead of just inserting 4 spaces at the cursor
-                        // That is insert the spaces at the beginning of the line. Shift+TAB should
-                        // do unindent, that is remove 4 spaces from the beginning of the line.
-                        // TODO: customizable indentation style
-                        // - tabs/spaces
-                        // - tab width
-                        // - etc.
-                        for (size_t i = 0; i < 4; ++i) {
-                            editor_insert_char(&editor, ' ');
-                        }
-                    }
-                    break;
-
-                    case SDLK_x: {
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_clipboard_cut(&editor);
-                        }
-                    }
-                    break;
-
-                    case SDLK_c: {
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_clipboard_copy(&editor);
-                        }
-                    }
-                    break;
-
-                    case SDLK_v: {
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_clipboard_paste(&editor);
-                        }
-                    }
-                    break;
-
-                    case SDLK_k: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_UP: {
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_move_paragraph_up(&editor);
-                        } else {
-                            editor_move_line_up(&editor);
-                        }
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-
-                    case SDLK_j: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_DOWN: {
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_move_paragraph_down(&editor);
-                        } else {
-                            editor_move_line_down(&editor);
-                        }
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-
-                    case SDLK_PAGEUP: {
-                        editor_move_page_up(&editor);
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-
-                    case SDLK_PAGEDOWN: {
-                        editor_move_page_down(&editor);
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-
-                    case SDLK_h: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_LEFT: {
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_move_word_left(&editor);
-                        } else {
-                            editor_move_char_left(&editor);
-                        }
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-
-                    case SDLK_l: {
-                        if (editor.mode != EDITOR_MODE_NORMAL)
-                            break;
-                    }
-                    case SDLK_RIGHT: {
-                        editor_update_selection(&editor, event.key.keysym.mod & KMOD_SHIFT);
-                        if (event.key.keysym.mod & KMOD_CTRL) {
-                            editor_move_word_right(&editor);
-                        } else {
-                            editor_move_char_right(&editor);
-                        }
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                    break;
-                    }
-                }
-            }
-            break;
-
-            case SDL_TEXTINPUT: {
-                if (file_browser) {
-                    // Nothing for now
-                    // Once we have incremental search in the file browser this may become useful
-                } else {
-                    // TODO: Reorder events so that key down events always come before
-                    if (editor.mode == EDITOR_MODE_INSERT) {
-                        const char *text = event.text.text;
-                        size_t text_len = strlen(text);
-                        for (size_t i = 0; i < text_len; ++i) {
-                            editor_insert_char(&editor, text[i]);
-                        }
-                        editor.last_stroke = SDL_GetTicks();
-                    }
-                }
-            }
-            break;
-            }
-        }
+        handle_events(&context, &editor, &sr);
 
         Vec4f bg = hex_to_vec4f(0x181818FF);
         glClearColor(bg.x, bg.y, bg.z, bg.w);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        if (file_browser) {
+        if (editor.mode == EDITOR_MODE_BROWSE) {
             fb_render(&fb, window, &atlas, &sr);
         } else {
             editor_render(window, &atlas, &sr, &editor);
@@ -531,6 +193,493 @@ int main(int argc, char **argv)
     }
 
     return 0;
+}
+
+static void handle_events_normal_mode(Editor*, SDL_Event);
+static void handle_events_insert_mode(Editor*, SDL_Event);
+static void handle_events_browse_mode(Editor*, SDL_Event);
+static_assert(__EDITOR_MODE_SIZE == 3, "Don't forget to update this");
+static void (*event_handlers[__EDITOR_MODE_SIZE])(Editor*, SDL_Event) = {
+    [EDITOR_MODE_NORMAL] = handle_events_normal_mode,
+    [EDITOR_MODE_INSERT] = handle_events_insert_mode,
+    [EDITOR_MODE_BROWSE] = handle_events_browse_mode,
+};
+
+static void handle_events(Handle_Events *context, Editor *editor, Simple_Renderer *sr)
+{
+    SDL_Event event = {0};
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT)
+            context->quit = true;
+
+        switch (event.type) {
+
+        case SDL_WINDOWEVENT: {
+            switch (event.window.event) {
+            case SDL_WINDOWEVENT_RESTORED:
+            case SDL_WINDOWEVENT_MAXIMIZED:
+            case SDL_WINDOWEVENT_SIZE_CHANGED:
+            case SDL_WINDOWEVENT_RESIZED: {
+                int w = event.window.data1;
+                int h = event.window.data2;
+                glViewport(0, 0, w, h);
+            }
+            break;
+            }
+        }
+        break;
+
+        case SDL_KEYDOWN: {
+            switch (event.key.keysym.sym) {
+                case SDLK_F11: {
+                    context->is_fullscreen = !context->is_fullscreen;
+                    SDL_SetWindowFullscreen(context->window, context->is_fullscreen * SDL_WINDOW_FULLSCREEN_DESKTOP);
+                }
+                continue;
+
+                case SDLK_F3: {
+                    editor->mode = EDITOR_MODE_BROWSE;
+                }
+                continue;
+
+                case SDLK_F5: {
+                    simple_renderer_reload_shaders(sr);
+                }
+                continue;
+
+                case SDLK_F2: {
+                    if (editor->file_path.count > 0) {
+                        Errno err = editor_save(editor);
+                        if (err != 0) {
+                            flash_error("Could not save currently edited file: %s", strerror(err));
+                        }
+                    } else {
+                        // TODO: ask the user for the path to save to in this situation
+                        flash_error("Nowhere to save the text");
+                    }
+                }
+                continue;
+
+            }
+        } break;
+
+        }
+
+        event_handlers[editor->mode](editor, event);
+    }
+}
+
+static void handle_events_normal_mode(Editor *editor, SDL_Event event)
+{
+    switch (event.type) {
+    case SDL_KEYDOWN: {
+        switch (event.key.keysym.sym) {
+        case SDLK_0:
+        case SDLK_HOME: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_to_begin(editor);
+            } else {
+                editor_move_to_line_begin(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        } break;
+
+        case SDLK_DOLLAR:
+        case SDLK_END: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_to_end(editor);
+            } else {
+                editor_move_to_line_end(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        } break;
+
+
+        case SDLK_ESCAPE: {
+            if (!editor->selection && !editor->searching) {
+                editor->mode = EDITOR_MODE_NORMAL;
+            }
+            editor_stop_search(editor);
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+        break;
+
+        } break;
+
+        case SDLK_o: {
+            editor->mode = EDITOR_MODE_INSERT;
+            SDL_FlushEvent(SDL_TEXTINPUT);
+            if (event.key.keysym.mod & KMOD_SHIFT) {
+                editor_move_line_up(editor);
+            }
+            editor_insert_char(editor, '\n');
+        }
+
+        case SDLK_i: {
+            editor->mode = EDITOR_MODE_INSERT;
+            SDL_FlushEvent(SDL_TEXTINPUT);
+        } break;
+
+        case SDLK_s: {
+            if (editor->file_path.count > 0) {
+                Errno err = editor_save(editor);
+                if (err != 0) {
+                    flash_error("Could not save currently edited file: %s", strerror(err));
+                }
+            } else {
+                // TODO: ask the user for the path to save to in this situation
+                flash_error("Nowhere to save the text");
+            }
+        }
+
+        case SDLK_RETURN: {
+            editor_move_line_down(editor);
+        }
+        break;
+
+        case SDLK_x: {
+            if (!editor->selection) {
+                editor->selection = true;
+                editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+                editor_move_char_right(editor);
+                editor->last_stroke = SDL_GetTicks();
+            }
+            editor_clipboard_cut(editor);
+        }
+        break;
+
+        case SDLK_DELETE: {
+            editor_delete(editor, event.key.keysym.mod & KMOD_CTRL);
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_a: {
+            if (event.key.keysym.mod & KMOD_SHIFT) {
+                editor_move_to_end(editor);
+                editor->mode = EDITOR_MODE_INSERT;
+                SDL_FlushEvent(SDL_TEXTINPUT);
+            }
+        }
+        break;
+
+        case SDLK_k:
+        case SDLK_UP: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_paragraph_up(editor);
+            } else {
+                editor_move_line_up(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_j:
+        case SDLK_DOWN: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_paragraph_down(editor);
+            } else {
+                editor_move_line_down(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_PAGEUP: {
+            editor_move_page_up(editor);
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_PAGEDOWN: {
+            editor_move_page_down(editor);
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_BACKSPACE:
+        case SDLK_h:
+        case SDLK_LEFT: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                case SDLK_b:
+                editor_move_word_left(editor);
+            } else {
+                editor_move_char_left(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_l:
+        case SDLK_RIGHT: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                case SDLK_w:
+                editor_move_word_right(editor);
+            } else {
+                editor_move_char_right(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+        }
+    }
+    break;
+    }
+}
+
+static void handle_events_insert_mode(Editor *editor, SDL_Event event)
+{
+    switch (event.type) {
+    case SDL_KEYDOWN: {
+        switch (event.key.keysym.sym) {
+        case SDLK_ESCAPE: {
+            if (!editor->selection && !editor->searching) {
+                editor->mode = EDITOR_MODE_NORMAL;
+            }
+            editor_stop_search(editor);
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+        }
+        break;
+
+        case SDLK_HOME: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_to_begin(editor);
+            } else {
+                editor_move_to_line_begin(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        } break;
+
+        case SDLK_END: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_to_end(editor);
+            } else {
+                editor_move_to_line_end(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        } break;
+
+        case SDLK_BACKSPACE: {
+            editor_backspace(editor, event.key.keysym.mod & KMOD_CTRL);
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_RETURN: {
+            if (editor->searching) {
+                editor_stop_search(editor);
+            } else {
+                editor_insert_char(editor, '\n');
+                editor->last_stroke = SDL_GetTicks();
+            }
+        }
+        break;
+
+        case SDLK_DELETE: {
+            editor_delete(editor, event.key.keysym.mod & KMOD_CTRL);
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_f: {
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_start_search(editor);
+            }
+        }
+        break;
+
+        case SDLK_a: {
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor->selection = true;
+                editor->select_begin = 0;
+                editor->cursor = editor->data.count;
+            }
+        }
+        break;
+
+        case SDLK_TAB: {
+            // TODO: indent on Tab instead of just inserting 4 spaces at the cursor
+            // That is insert the spaces at the beginning of the line. Shift+TAB should
+            // do unindent, that is remove 4 spaces from the beginning of the line.
+            // TODO: customizable indentation style
+            // - tabs/spaces
+            // - tab width
+            // - etc.
+            for (size_t i = 0; i < 4; ++i) {
+                editor_insert_char(editor, ' ');
+            }
+        }
+        break;
+
+        case SDLK_x: {
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_clipboard_cut(editor);
+            }
+        }
+        break;
+
+        case SDLK_c: {
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_clipboard_copy(editor);
+            }
+        }
+        break;
+
+        case SDLK_v: {
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_clipboard_paste(editor);
+            }
+        }
+        break;
+
+        case SDLK_UP: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_paragraph_up(editor);
+            } else {
+                editor_move_line_up(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_DOWN: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_paragraph_down(editor);
+            } else {
+                editor_move_line_down(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_PAGEUP: {
+            editor_move_page_up(editor);
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_PAGEDOWN: {
+            editor_move_page_down(editor);
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_LEFT: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_word_left(editor);
+            } else {
+                editor_move_char_left(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+
+        case SDLK_RIGHT: {
+            editor_update_selection(editor, event.key.keysym.mod & KMOD_SHIFT);
+            if (event.key.keysym.mod & KMOD_CTRL) {
+                editor_move_word_right(editor);
+            } else {
+                editor_move_char_right(editor);
+            }
+            editor->last_stroke = SDL_GetTicks();
+        }
+        break;
+    }
+    break;
+    }
+
+    case SDL_TEXTINPUT: {
+        const char *text = event.text.text;
+        size_t text_len = strlen(text);
+        for (size_t i = 0; i < text_len; ++i) {
+            editor_insert_char(editor, text[i]);
+        }
+        editor->last_stroke = SDL_GetTicks();
+    }
+    break;
+    }
+}
+
+static void handle_events_browse_mode(Editor *editor, SDL_Event event)
+{
+    switch (event.type) {
+    case SDL_KEYDOWN: {
+        switch (event.key.keysym.sym) {
+        case SDLK_ESCAPE: {
+            editor->mode = EDITOR_MODE_NORMAL;
+        }
+
+        case SDLK_F3: {
+            editor->mode = EDITOR_MODE_NORMAL;
+        }
+        break;
+
+        case SDLK_k:
+        case SDLK_UP: {
+            if (fb.cursor > 0) fb.cursor -= 1;
+        }
+        break;
+
+        case SDLK_j:
+        case SDLK_DOWN: {
+            if (fb.cursor + 1 < fb.files.count) fb.cursor += 1;
+        }
+        break;
+
+        case SDLK_RETURN: {
+            const char *file_path = fb_file_path(&fb);
+            if (file_path) {
+                File_Type ft;
+                Errno err = type_of_file(file_path, &ft);
+                if (err != 0) {
+                    flash_error("Could not determine type of file %s: %s", file_path, strerror(err));
+                } else {
+                    switch (ft) {
+                    case FT_DIRECTORY: {
+                        err = fb_change_dir(&fb);
+                        if (err != 0) {
+                            flash_error("Could not change directory to %s: %s", file_path, strerror(err));
+                        }
+                    }
+                    break;
+
+                    case FT_REGULAR: {
+                        // TODO: before opening a new file make sure you don't have unsaved changes
+                        // And if you do, annoy the user about it. (just like all the other editors do)
+                        err = editor_load_from_file(editor, file_path);
+                        if (err != 0) {
+                            flash_error("Could not open file %s: %s", file_path, strerror(err));
+                        } else {
+                            editor->mode = EDITOR_MODE_BROWSE;
+                        }
+                    }
+                    break;
+
+                    case FT_OTHER: {
+                        flash_error("%s is neither a regular file nor a directory. We can't open it.", file_path);
+                    }
+                    break;
+
+                    default:
+                        UNREACHABLE("unknown File_Type");
+                    }
+                }
+            }
+        }
+        break;
+        }
+    } break;
+    }
 }
 
 // TODO: ability to search within file browser

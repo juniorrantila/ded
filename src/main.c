@@ -357,7 +357,7 @@ static void handle_events_normal_mode(Editor *editor, SDL_Event event)
 
         case SDLK_a: {
             if (event.key.keysym.mod & KMOD_SHIFT) {
-                editor_move_to_end(editor);
+                editor_move_to_line_end(editor);
                 editor->mode = EDITOR_MODE_INSERT;
                 SDL_FlushEvent(SDL_TEXTINPUT);
             }

@@ -180,7 +180,7 @@ int main(int argc, char **argv)
         if (editor.mode == EDITOR_MODE_BROWSE) {
             fb_render(&fb, window, &atlas, &sr);
         } else {
-            editor_render(window, &atlas, &sr, &editor);
+            editor_render(&editor, window, &atlas, &sr);
         }
 
         SDL_GL_SwapWindow(window);

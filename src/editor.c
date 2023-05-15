@@ -353,7 +353,7 @@ const char *editor_line_starts_with_one_of(Editor *e, size_t row, size_t col, co
     return NULL;
 }
 
-void editor_render(SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer *sr, Editor *editor)
+void editor_render(Editor *editor, SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer *sr)
 {
     int w, h;
     SDL_GetWindowSize(window, &w, &h);

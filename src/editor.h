@@ -85,7 +85,7 @@ void editor_move_paragraph_down(Editor *e);
 void editor_insert_char(Editor *e, char x);
 void editor_insert_buf(Editor *e, char *buf, size_t buf_len);
 void editor_retokenize(Editor *e);
-void editor_render(SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer *sr, Editor *editor);
+void editor_render(Editor *editor, SDL_Window *window, Free_Glyph_Atlas *atlas, Simple_Renderer *sr);
 void editor_update_selection(Editor *e, bool shift);
 void editor_clipboard_cut(Editor *e);
 void editor_clipboard_copy(Editor *e);

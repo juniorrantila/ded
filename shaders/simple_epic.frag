@@ -1,5 +1,6 @@
 #version 330 core
 
+out vec4 frag_color;
 uniform float time;
 uniform vec2 resolution;
 uniform sampler2D image;
@@ -18,5 +19,5 @@ void main() {
     float alpha = smoothstep(0.5 - aaf, 0.5 + aaf, d);
     vec2 frag_uv = gl_FragCoord.xy / resolution;
     vec4 rainbow = vec4(hsl2rgb(vec3((time + frag_uv.x + frag_uv.y), 0.5, 0.5)), 1.0);
-    gl_FragColor = vec4(rainbow.rgb, alpha);
+    frag_color = vec4(rainbow.rgb, alpha);
 }

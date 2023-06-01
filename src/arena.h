@@ -30,13 +30,13 @@
 #define ARENA_ASSERT assert
 #endif
 
-#define ARENA_BACKEND_LIBC_MALLOC 0
+#define ARENA_BACKEND_MALLOC 0
 #define ARENA_BACKEND_LINUX_MMAP 1
 #define ARENA_BACKEND_WIN32_VIRTUALALLOC 2
 #define ARENA_BACKEND_WASM_HEAPBASE 3
 
 #ifndef ARENA_BACKEND
-#define ARENA_BACKEND ARENA_BACKEND_LIBC_MALLOC
+#define ARENA_BACKEND ARENA_BACKEND_MALLOC
 #endif // ARENA_BACKEND
 
 typedef struct Region Region;
@@ -71,16 +71,27 @@ void arena_free(Arena *a);
 
 #ifdef ARENA_IMPLEMENTATION
 
-#if ARENA_BACKEND == ARENA_BACKEND_LIBC_MALLOC
+#if ARENA_BACKEND == ARENA_BACKEND_MALLOC
+#ifndef ARENA_NO_STDLIB
 #include <stdlib.h>
+#endif
+
+#ifndef ARENA_MALLOC
+#define ARENA_MALLOC malloc
+#endif
+
+#ifndef ARENA_FREE
+#define ARENA_FREE free
+#endif
+
 
 // TODO: instead of accepting specific capacity new_region() should accept the size of the object we want to fit into the region
 // It should be up to new_region() to decide the actual capacity to allocate
 Region *new_region(size_t capacity)
 {
     size_t size_bytes = sizeof(Region) + sizeof(uintptr_t)*capacity;
-    // TODO: it would be nice if we could guarantee that the regions are allocated by ARENA_BACKEND_LIBC_MALLOC are page aligned
-    Region *r = malloc(size_bytes);
+    // TODO: it would be nice if we could guarantee that the regions are allocated by ARENA_BACKEND_MALLOC are page aligned
+    Region *r = ARENA_MALLOC(size_bytes);
     ARENA_ASSERT(r);
     r->next = NULL;
     r->count = 0;
@@ -90,7 +101,7 @@ Region *new_region(size_t capacity)
 
 void free_region(Region *r)
 {
-    free(r);
+    ARENA_FREE(r);
 }
 #elif ARENA_BACKEND == ARENA_BACKEND_LINUX_MMAP
 #  error "TODO: Linux mmap backend is not implemented yet"

@@ -92,17 +92,22 @@ typedef struct {
 
 #define sb_to_sv(sb) sv_from_parts((sb).items, (sb).count)
 
-typedef struct {
-    const char **items;
-    size_t count;
-    size_t capacity;
-} Files;
-
 typedef enum {
     FT_REGULAR,
     FT_DIRECTORY,
     FT_OTHER,
 } File_Type;
+
+typedef struct {
+    const char *name;
+    File_Type type;
+} File;
+
+typedef struct {
+    File *items;
+    size_t count;
+    size_t capacity;
+} Files;
 
 Errno type_of_file(const char *file_path, File_Type *ft);
 Errno read_entire_file(const char *file_path, String_Builder *sb);

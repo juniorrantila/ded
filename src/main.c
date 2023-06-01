@@ -96,18 +96,38 @@ int main(int argc, char **argv)
 
     if (argc > 1) {
         const char *file_path = argv[1];
-        err = editor_load_from_file(&editor, file_path);
+        const char *dir_path = ".";
+
+        File_Type file_type;
+        err = type_of_file(file_path, &file_type);
         if (err != 0) {
-            fprintf(stderr, "ERROR: Could not read file %s: %s\n", file_path, strerror(err));
+            fprintf(stderr, "ERROR: Could not get type of file %s: %s\n", file_path, strerror(err));
             return 1;
         }
-    }
+        switch (file_type) {
+            case FT_REGULAR:
+                err = editor_load_from_file(&editor, file_path);
+                if (err != 0) {
+                    fprintf(stderr, "ERROR: Could not read file %s: %s\n", file_path, strerror(err));
+                    return 1;
+                }
+                editor.mode = EDITOR_MODE_NORMAL;
+                dir_path = ".";
 
-    const char *dir_path = ".";
-    err = fb_open_dir(&fb, dir_path);
-    if (err != 0) {
-        fprintf(stderr, "ERROR: Could not read directory %s: %s\n", dir_path, strerror(err));
-        return 1;
+            case FT_DIRECTORY:
+                editor.mode = EDITOR_MODE_BROWSE;
+                dir_path = file_path;
+                break;
+
+            case FT_OTHER:
+                fprintf(stderr, "ERROR: Could not get open file %s: unknown file type\n", file_path);
+                return -1;
+        }
+        err = fb_open_dir(&fb, file_path);
+        if (err != 0) {
+            fprintf(stderr, "ERROR: Could not read directory %s: %s\n", dir_path, strerror(err));
+            return 1;
+        }
     }
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {

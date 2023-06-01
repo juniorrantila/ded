@@ -103,7 +103,7 @@ Errno fb_change_dir(File_Browser *fb)
 
     if (fb->cursor >= fb->files.count) return 0;
 
-    const char *dir_name = fb->files.items[fb->cursor];
+    const char *dir_name = fb->files.items[fb->cursor].name;
 
     fb->dir_path.count -= 1;
 
@@ -147,8 +147,11 @@ void fb_render(const File_Browser *fb, SDL_Window *window, Free_Glyph_Atlas *atl
         const Vec2f begin = vec2f(0, -((float)fb->cursor + CURSOR_OFFSET) * FREE_GLYPH_FONT_SIZE);
         Vec2f end = begin;
         free_glyph_atlas_measure_line_sized(
-            atlas, fb->files.items[fb->cursor], strlen(fb->files.items[fb->cursor]),
+            atlas, fb->files.items[fb->cursor].name, strlen(fb->files.items[fb->cursor].name),
             &end);
+        if (fb->files.items[fb->cursor].type == FT_DIRECTORY) {
+            free_glyph_atlas_render_line_sized(atlas, sr, "/", 1, &end, vec4fs(0));
+        }
         simple_renderer_solid_rect(sr, begin, vec2f(end.x - begin.x, FREE_GLYPH_FONT_SIZE), vec4f(.25, .25, .25, 1));
     }
     simple_renderer_flush(sr);
@@ -158,9 +161,12 @@ void fb_render(const File_Browser *fb, SDL_Window *window, Free_Glyph_Atlas *atl
         const Vec2f begin = vec2f(0, -(float)row * FREE_GLYPH_FONT_SIZE);
         Vec2f end = begin;
         free_glyph_atlas_render_line_sized(
-            atlas, sr, fb->files.items[row], strlen(fb->files.items[row]),
+            atlas, sr, fb->files.items[row].name, strlen(fb->files.items[row].name),
             &end,
             vec4fs(0));
+        if (fb->files.items[row].type == FT_DIRECTORY) {
+            free_glyph_atlas_render_line_sized(atlas, sr, "/", 1, &end, vec4fs(0));
+        }
         // TODO: the max_line_len should be calculated based on what's visible on the screen right now
         float line_len = fabsf(end.x - begin.x);
         if (line_len > max_line_len) {
@@ -209,7 +215,7 @@ const char *fb_file_path(File_Browser *fb)
     fb->file_path.count = 0;
     sb_append_buf(&fb->file_path, fb->dir_path.items, fb->dir_path.count - 1);
     sb_append_buf(&fb->file_path, "/", 1);
-    sb_append_cstr(&fb->file_path, fb->files.items[fb->cursor]);
+    sb_append_cstr(&fb->file_path, fb->files.items[fb->cursor].name);
     sb_append_null(&fb->file_path);
 
     return fb->file_path.items;

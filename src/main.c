@@ -680,7 +680,7 @@ static void handle_events_browse_mode(Editor *editor, SDL_Event event)
                         if (err != 0) {
                             flash_error("Could not open file %s: %s", file_path, strerror(err));
                         } else {
-                            editor->mode = EDITOR_MODE_BROWSE;
+                            editor->mode = EDITOR_MODE_NORMAL;
                         }
                     }
                     break;
